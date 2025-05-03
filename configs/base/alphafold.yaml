@@ -1,0 +1,23 @@
+name: alphafold
+model_device: cuda
+device_group: null
+config_preset: model_1
+jax_param_path: null
+openfold_checkpoint_path: null
+save_outputs: false
+cpus: 4
+preset: full_dbs # choices=["reduced_dbs", "full_dbs"]
+output_postfix: null
+data_random_seed: 0
+skip_relaxation: true
+multimer_ri_gap: 200
+trace_model: false
+subtract_plddt: false
+long_sequence_inference: false
+cif_output: true
+crop_msa_num: 512
+p1: null
+p2: null
+
+kalign_binary_path: null
+use_mek: true

@@ -1,0 +1,8 @@
+info_dir: null
+plot_rmsd_path: false
+log_intermediate_structures: false
+max_recycling_iters: 1
+tag_cluster_mapping_path: null
+device_group: null
+skip_existing: false
+save_distograms: false

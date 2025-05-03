@@ -1,0 +1,11 @@
+defaults:
+ - base_iter
+
+opt: true
+num_gradient_steps: 10
+guidance_lr: 0.01
+optimizer: adam # choices ["adam", "sgd"]
+precision: bfloat16
+gt_distogram_weight: 1.0
+gt_distances_path: /path/to/far/{tag}_dist.npy
+gt_mask_path: /path/to/far/{tag}_mask.npy

@@ -1,0 +1,9 @@
+opt: false
+num_gradient_steps: 0
+guidance_lr: 0.0
+entropy_weight: null
+gt_distogram_weight: null
+optimizer: adam # choices ["adam", "sgd"]
+precision: float32
+gt_distances_path: null
+gt_mask_path: null

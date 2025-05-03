@@ -1,0 +1,8 @@
+defaults:
+ - base_settings
+ - egf_iter@iter_0
+
+max_recycling_iters: 1
+plot_rmsd_path: true
+log_intermediate_structures: true
+skip_existing: false

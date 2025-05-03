@@ -1,0 +1,18 @@
+biopython
+deepspeed
+dm-tree
+ml-collections
+PyYAML
+requests
+# scipy==1.7.1
+typing-extensions
+pytorch_lightning
+wandb
+git+https://github.com/NVIDIA/dllogger.git
+einops
+tqdm
+numpy
+modelcif==0.7
+torch
+matplotlib
+scikit-learn

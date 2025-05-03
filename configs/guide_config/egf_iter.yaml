@@ -1,0 +1,9 @@
+defaults:
+ - base_iter
+
+opt: true
+num_gradient_steps: 1
+guidance_lr: 0.01
+entropy_weight: 1.0
+optimizer: adam # choices ["adam", "sgd"]
+precision: bfloat16
