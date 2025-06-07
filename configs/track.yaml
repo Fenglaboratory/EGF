@@ -1,0 +1,4 @@
+defaults:
+ - base_settings
+ - guide_config: track
+ - base: alphafold

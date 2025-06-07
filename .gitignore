@@ -1,0 +1,17 @@
+.vscode/
+.idea/
+__pycache__/
+*.egg-info
+build
+dist
+
+# files from script downloads
+tests/test_data/
+cutlass/
+
+*.so
+*.o
+tools/build
+tools/py_qcprot/build
+outputs/
+tools/py_qcprot/py_qcprot.c
