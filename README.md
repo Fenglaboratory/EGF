@@ -18,6 +18,9 @@ chmod +x setup_tools.sh
 ```
 This installation should take less than 30 minutes on a standard computer.
 
+# GPU requirements
+Note that in order to run EGF, you must have sufficient GPU memory. Evaluating on longer sequences requires more GPU memory. If the GPU memory on your device is not enough, you will see a "Cuda out of memory" error. This indicates that you either need a GPU with more memory or run on multiple GPUs. The code will automatically detect multiple GPUs and split the model between the GPUs, and you can control which GPUs is uses by setting `CUDA_VISIBLE_DEVICES` (e.g. setting `CUDA_VISIBLE_DEVICES=0,1` forces the program to use GPUs 0 and 1). 
+
 # Data
 Make a new root folder where you will store the relevant information.
 Make a file inside the folder which is the tag to cluster mapping (the keys are also used as a list of tags, so also called tag_path):
@@ -64,8 +67,11 @@ Run `write_inputs.py` to write MSAs, structures, and sequences.
 ```
 python3 write_inputs.py --root_dir /your/root/dir \
                         --tag_path /your/tag/path.json \
-                        --sequence_dict_path /your/sequence/dict.json
+                        --sequence_dict_path /your/sequence/dict.json \
+                        --all
 ```
+Note that the --all option will download sequence, structure, and MSA. If you would only like to download a subset of these three, you can use the individual --sequence, --structure, and --msa options.
+
 Writing complete data for each protein (i.e. sequence, structure, MSA) should take less than 5 minutes each.
 If this command is successful, the program should output progress bars for the MSA, structure, and sequence downloads.
 
@@ -248,3 +254,6 @@ Ahdritz, G. et al. OpenFold: retraining AlphaFold2 yields new insights into its 
 Our code uses the AlphaFold2 models: https://github.com/google-deepmind/alphafold
 
 Jumper, J. et al. Highly accurate protein structure prediction with AlphaFold. Nature 596, 583-589 (2021).
+
+# Questions
+If you have any questions about the code please feel free to file an issue.
