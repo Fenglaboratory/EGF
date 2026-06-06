@@ -1,6 +1,13 @@
 Welcome to the codebase for entropy guided folding!
 
-Biorxiv: https://www.biorxiv.org/content/10.1101/2025.04.26.650728v1
+**Update**: We have also created a Colab notebook for easily running EGF:
+
+
+Colab Notebook: <https://colab.research.google.com/drive/104_cDjsaTEdKqEmuuCVpf-8Y4g84fbic?usp=sharing>
+
+Biorxiv: <https://www.biorxiv.org/content/10.1101/2025.04.26.650728v1>
+
+If you would like to run EGF using a container, please see [CONTAINER_INSTRUCTIONS.md](CONTAINER_INSTRUCTIONS.md).
 
 Prerequisites:
  - Fresh conda environment with python=3.10
@@ -19,7 +26,7 @@ chmod +x setup_tools.sh
 This installation should take less than 30 minutes on a standard computer.
 
 # GPU requirements
-Note that in order to run EGF, you must have sufficient GPU memory. Evaluating on longer sequences requires more GPU memory. If the GPU memory on your device is not enough, you will see a "Cuda out of memory" error. This indicates that you either need a GPU with more memory or run on multiple GPUs. The code will automatically detect multiple GPUs and split the model between the GPUs, and you can control which GPUs is uses by setting `CUDA_VISIBLE_DEVICES` (e.g. setting `CUDA_VISIBLE_DEVICES=0,1` forces the program to use GPUs 0 and 1). 
+Note that in order to run EGF, you must have sufficient GPU memory. Evaluating on longer sequences requires more GPU memory. If the GPU memory on your device is not enough, you will see a "Cuda out of memory" error. This indicates that you either need a GPU with more memory or run on multiple GPUs. The code will automatically detect multiple GPUs and split the model between the GPUs, and you can control which GPUs is uses by setting `CUDA_VISIBLE_DEVICES` (e.g. setting `CUDA_VISIBLE_DEVICES=0,1` forces the program to use GPUs 0 and 1).
 
 Approximate maximum sequence lengths supported per GPU type (single GPU):
 | GPU  | Max sequence length |

@@ -1,0 +1,160 @@
+Bootstrap: docker
+From: nvidia/cuda:12.1.1-cudnn8-devel-ubuntu22.04
+
+%labels
+    Maintainer "EGF Team"
+    Description "Entropy Guided Folding (EGF) - AlphaFold2-based protein structure prediction with entropy guidance"
+    Version "1.0.0"
+    Reference "https://www.biorxiv.org/content/10.1101/2025.04.26.650728v1"
+
+%help
+    Container for Entropy Guided Folding (EGF).
+    See CONTAINER_INSTRUCTIONS.md for full usage.
+
+    Quick example:
+        apptainer exec --nv \
+            --bind /path/to/alphafold_params:/data/alphafold_params \
+            --bind /path/to/root_data:/data/root \
+            egf.sif python3 /opt/EGF_public/run_all_settings.py \
+                --config-name=egf \
+                --fasta_dir=/data/root/sequences \
+                --alignment_dir=/data/root/alignments \
+                --template_dir=/data/root/templates \
+                --output_dir=/data/root/outputs \
+                --structure_dir=/data/root/structures \
+                --info_dir=/data/root/outputs \
+                --tag_cluster_mapping_path=/data/root/stcm.json \
+                --jax_param_path=/data/alphafold_params/params_{model_config}.npz
+
+%environment
+    export PATH=/opt/conda/bin:$PATH
+    export LD_LIBRARY_PATH=/opt/conda/lib:/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+    export PYTHONPATH=/opt/EGF_public:$PYTHONPATH
+    export CUDA_HOME=/usr/local/cuda
+    export CONDA_PREFIX=/opt/conda
+
+%post
+    export DEBIAN_FRONTEND=noninteractive
+    export PATH=/opt/conda/bin:$PATH
+    export LD_LIBRARY_PATH=/opt/conda/lib:/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+    export CUDA_HOME=/usr/local/cuda
+
+    # ── System packages ──────────────────────────────────────────────────────
+    apt-get update && apt-get install -y --no-install-recommends \
+        wget curl git aria2 \
+        libxml2 libxml2-dev \
+        build-essential gcc g++ \
+        ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+    # ── Miniforge3 (conda/mamba) ─────────────────────────────────────────────
+    wget -q \
+        "https://github.com/conda-forge/miniforge/releases/download/23.3.1-1/Miniforge3-Linux-x86_64.sh" \
+        -O /tmp/miniforge.sh
+    bash /tmp/miniforge.sh -b -p /opt/conda
+    rm /tmp/miniforge.sh
+    export PATH=/opt/conda/bin:$PATH
+
+    # ── Python + structural biology packages ─────────────────────────────────
+    /opt/conda/bin/mamba install -n base -y \
+        "python=3.10" \
+        pip setuptools cython \
+        "openmm=7.7" pdbfixer \
+        -c conda-forge
+
+    # ── Bioinformatics alignment tools (for MSA generation) ──────────────────
+    /opt/conda/bin/mamba install -n base -y \
+        "hmmer=3.3.2" "hhsuite=3.3.0" "kalign2=2.04" \
+        -c bioconda -c conda-forge
+
+    /opt/conda/bin/mamba clean --all -y
+
+    # ── PyTorch 2.6.0 with CUDA 12.6 ────────────────────────────────────────
+    /opt/conda/bin/pip install \
+        "torch==2.6.0" \
+        --index-url https://download.pytorch.org/whl/cu126
+
+    # ── Remaining Python dependencies ────────────────────────────────────────
+    /opt/conda/bin/pip install --no-cache-dir \
+        "biopython==1.85" \
+        "deepspeed==0.17.0" \
+        "dm-tree==0.1.9" \
+        "ml-collections==1.1.0" \
+        "PyYAML==6.0.2" \
+        "requests==2.32.3" \
+        "scipy==1.15.3" \
+        "typing-extensions==4.14.0" \
+        "pytorch_lightning==2.5.1.post0" \
+        "wandb==0.19.11" \
+        "git+https://github.com/NVIDIA/dllogger.git@0478734ff7be75adde8d160e04872664d1c62e5f" \
+        "einops==0.8.1" \
+        "tqdm==4.67.1" \
+        "numpy==2.0.2" \
+        "modelcif==0.7" \
+        "matplotlib==3.10.0" \
+        "scikit-learn==1.6.1" \
+        "hydra-core==1.3.2" \
+        "colorama==0.4.6" \
+        "tabulate" \
+        "pandas"
+
+    # ── Copy EGF source code ──────────────────────────────────────────────────
+    # Source is bind-mounted at build time via:
+    #   --bind "$(pwd)":/tmp/EGF_build_src
+    if [ ! -d /tmp/EGF_build_src ]; then
+        echo "ERROR: /tmp/EGF_build_src not found."
+        echo "Build with: apptainer build --fakeroot --bind \"\$(pwd)\":/tmp/EGF_build_src egf.sif egf.def"
+        exit 1
+    fi
+    mkdir -p /opt/EGF_public
+    cp -r /tmp/EGF_build_src/. /opt/EGF_public/
+
+    # ── Download required OpenFold resource file ──────────────────────────────
+    mkdir -p /opt/EGF_public/openfold/resources
+    wget -q \
+        "https://git.scicore.unibas.ch/schwede/openstructure/-/raw/7102c63615b64735c4941278d92b554ec94415f8/modules/mol/alg/src/stereo_chemical_props.txt" \
+        -O /opt/EGF_public/openfold/resources/stereo_chemical_props.txt
+
+    # ── Build CUDA / C++ extensions ───────────────────────────────────────────
+    # No GPU driver is available during container build. get_nvidia_cc() returns
+    # None, so setup.py compiles for the full default set of architectures:
+    #   sm_52 (Titan X/Maxwell), sm_61 (GTX 10xx/Pascal),
+    #   sm_70 (V100/Volta), sm_80 (A100/Ampere)
+    # sm_37 (Kepler/K80) is intentionally excluded — CUDA 12 dropped it.
+    # Newer GPUs (sm_86, sm_90) fall back to PTX JIT at first run, which is
+    # slightly slower on the very first call but fully functional.
+    cd /opt/EGF_public
+    /opt/conda/bin/python3 setup.py build_ext --inplace
+
+    # ── Build Cython alignment tools ─────────────────────────────────────────
+    cd /opt/EGF_public/tools
+    /opt/conda/bin/python3 setup.py build_ext --inplace
+    cd py_qcprot
+    /opt/conda/bin/python3 setup.py build_ext --inplace
+
+    # ── Install openfold + CUDA extensions to site-packages ──────────────────
+    cd /opt/EGF_public
+    /opt/conda/bin/python3 setup.py install
+
+    chmod -R 755 /opt/EGF_public
+    chmod -R a+rX /opt/conda
+
+%runscript
+    # Default: run any Python script passed as arguments.
+    # Example: apptainer run egf.sif main.py --config-name=egf ...
+    cd /opt/EGF_public
+    exec /opt/conda/bin/python3 "$@"
+
+%test
+    echo "=== EGF Container Verification ==="
+    /opt/conda/bin/python3 -c "
+import torch, sys
+print(f'Python  : {sys.version.split()[0]}')
+print(f'PyTorch : {torch.__version__}')
+print(f'CUDA    : {torch.version.cuda}')
+print(f'GPU     : {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"not visible during build (expected)\"}')
+"
+    /opt/conda/bin/python3 -c "import openfold; print('openfold        : OK')"
+    /opt/conda/bin/python3 -c "import Bio; print(f'biopython {Bio.__version__}  : OK')"
+    /opt/conda/bin/python3 -c "import pytorch_lightning as pl; print(f'lightning {pl.__version__}  : OK')"
+    echo "=== All checks passed ==="

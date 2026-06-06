@@ -36,10 +36,14 @@ def enforce_config_constraints(config):
         raise ValueError("use_flash requires that FlashAttention is installed")
 
     deepspeed_is_installed = importlib.util.find_spec("deepspeed") is not None
-    ds4s_is_installed = (
-        deepspeed_is_installed
-        and importlib.util.find_spec("deepspeed.ops.deepspeed4science") is not None
-    )
+    ds4s_is_installed = False
+    if deepspeed_is_installed:
+        try:
+            ds4s_is_installed = (
+                importlib.util.find_spec("deepspeed.ops.deepspeed4science") is not None
+            )
+        except Exception:
+            pass
     if config.globals.use_deepspeed_evo_attention and not ds4s_is_installed:
         raise ValueError(
             "use_deepspeed_evo_attention requires that DeepSpeed be installed "

@@ -18,12 +18,18 @@ from typing import Optional, Callable, List, Tuple
 import numpy as np
 
 deepspeed_is_installed = importlib.util.find_spec("deepspeed") is not None
-ds4s_is_installed = (
-    deepspeed_is_installed
-    and importlib.util.find_spec("deepspeed.ops.deepspeed4science") is not None
-)
+ds4s_is_installed = False
 if deepspeed_is_installed:
-    import deepspeed
+    try:
+        import deepspeed
+        # find_spec on a submodule imports its parents; guard against
+        # environments where deepspeed's triton dependency can't initialise
+        # (e.g. missing mpicc in a container without MPI).
+        ds4s_is_installed = (
+            importlib.util.find_spec("deepspeed.ops.deepspeed4science") is not None
+        )
+    except Exception:
+        deepspeed_is_installed = False
 
 if ds4s_is_installed:
     from deepspeed.ops.deepspeed4science import DS4Sci_EvoformerAttention

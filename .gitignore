@@ -15,3 +15,5 @@ tools/build
 tools/py_qcprot/build
 outputs/
 tools/py_qcprot/py_qcprot.c
+
+*.sif

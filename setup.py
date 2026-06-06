@@ -62,9 +62,8 @@ def get_cuda_bare_metal_version(cuda_dir):
 
 compute_capabilities = set(
     [
-        (3, 7),  # K80, e.g.
-        (5, 2),  # Titan X
-        (6, 1),  # GeForce 1000-series
+        (5, 2),  # Titan X (Maxwell)
+        (6, 1),  # GeForce 1000-series (Pascal)
     ]
 )
 
